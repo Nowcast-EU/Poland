@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Senedd Calculator + Coalition Builder</title>
+<style>
+  body { font-family: Inter, system-ui, sans-serif; background: #fff; color: #0f172a; margin: 0; padding: 0 24px 24px 24px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  th, td { padding: 4px 6px; border: 1px solid #e2e8f0; }
+  th { background: #f1f5f9; font-weight: 600; text-align: left; }
+  td.party-column { font-weight: bold; position: relative; padding-left: 14px; color: black; }
+  td.party-column::before { content: ""; position: absolute; left: 0; top: 0; width: 8px; height: 100%; border-radius: 2px 0 0 2px; background-color: var(--party-color); }
+  td.ge2024-column { font-style: italic; color: #999999; }
+  td.seats-column { font-weight: bold; text-align: center; }
+  .input-wrapper { display: flex; align-items: center; }
+  .input-wrapper input { width: 50px; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; text-align: left; margin-right: 4px; transition: border-color 0.3s ease; }
+  .percent-sign { font-size: 14px; }
+  .button-container { display: flex; gap: 8px; margin-top: 14px; }
+  button#calculate { background: #008500; color: #fff; border: none; border-radius: 6px; padding: 8px 14px; cursor: pointer; transition: background 0.3s ease; flex: 0 0 80%; }
+  button#reset { background: #008500; color: #fff; border: none; border-radius: 6px; padding: 8px 14px; cursor: pointer; transition: background 0.3s ease; flex: 0 0 20%; }
+  tfoot td { font-weight: bold; text-align: center; background: #f1f5f9; }
+  tfoot td:first-child { text-align: left; padding-left: 14px; }
+  input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+
+  #coalition-builder { margin-top: 48px; }
+  .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  h3 { margin: 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 15px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;
+    border: 1px solid #ccc; border-radius: 8px; padding: 6px 10px; background: #f3f3f3; transition: all 0.25s ease; opacity: 0.6; font-weight: normal; }
+  .legend-item:hover { transform: translateY(-1px); }
+  .legend-item.active { opacity: 1; background: #ffffff; border-color: #999; box-shadow: 0 1px 3px rgba(0,0,0,0.15); font-weight: bold; }
+  .legend-box { width: 20px; height: 20px; border-radius: 4px; }
+  .bar-container { position: relative; height: 117px; background: #f0f0f0; border-radius: 10px; overflow: hidden; margin-bottom: 12px; width: 100%; }
+  .coalition-overlay { position: absolute; top: 0; left: 0; height: 100%; width: 0%; border-top-left-radius: 10px; border-bottom-left-radius: 10px; border-top-right-radius: 0; border-bottom-right-radius: 0; display: flex; overflow: hidden; transition: width 1s ease; }
+  .segment { height: 100%; flex-shrink: 0; border-radius: 0; }
+  .majority-line { position: absolute; top: 0; bottom: 0; width: 2px;
+    background: repeating-linear-gradient(to bottom,#333,#333 5px,transparent 5px,transparent 10px);
+    left: 50%; }
+  .counter { font-size: 22px; font-weight: bold; text-align: center; margin-bottom: 8px; }
+  .note { font-size: 13px; color: #555; text-align: center; }
+</style>
+</head>
+<body>
+
+<table>
+  <thead>
+    <tr>
+      <th>Party</th>
+      <th>2021</th>
+      <th>Votes (%)</th>
+      <th>Seats</th>
+    </tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+  <tfoot>
+    <tr>
+      <td>Totals</td>
+      <td></td>
+      <td id="total-votes">0.0%</td>
+      <td id="total-seats">0</td>
+    </tr>
+  </tfoot>
+</table>
+
+<div class="button-container">
+  <button id="calculate">Calculate</button>
+  <button id="reset">Reset</button>
+</div>
+
+<div id="coalition-builder">
+  <div class="header-container">
+    <h3>Senedd Coalition Builder (User Generated)</h3>
+  </div>
+
+  <div class="legend" id="legend"></div>
+
+  <div class="bar-container" id="bar">
+    <div class="coalition-overlay" id="coalition-overlay"></div>
+    <div class="majority-line" title="Majority (49 seats)"></div>
+  </div>
+
+  <div class="counter" id="counter">0 / 96</div>
+  <div class="note">Majority = 49 seats</div>
+</div>
+
+<script>
+const BASELINE = {"baseline_national": {"PiS": 0.14, "KO": 0.11, "PL50": 0.3, "GRN": 0.06, "LDM": 0.06, "AWA": 0.0, "RFM": 0.29, "YRP": 0.02, "OTH": 0.0, "NPP": 0.02},
+ "constituencies": [{"name": "1 – Legnica", "PiS": 0.17701835901588267, "KO": 0.04927501700937869, "PL50": 0.2828392005019441, "GRN": 0.04211349799333042, "LDM": 0.027699969872276516, "AWA": 0.0, "RFM": 0.3813738171009503, "YRP": 0.02, "OTH": 0.01968013850623733, "NPP": 0.02},
+ {"name": "2 – Wałbrzych", "PiS": 0.10546522187775902, "KO": 0.15005178427104365, "PL50": 0.453285249306842, "GRN": 0.03399601840668656, "LDM": 0.026136417387003286, "AWA": 0.0, "RFM": 0.19262723280649477, "YRP": 0.013, "OTH": 0.019438075944170765, "NPP": 0.013}, 
+{"name": "Blaenau Gwent Caerffili Rhymni", "PiS": 0.15469457195527614, "KO": 0.07262442769579569, "PL50": 0.3129120239423727, "GRN": 0.058834885221826366, "LDM": 0.04085296420877777, "AWA": 0.0, "RFM": 0.3207572906090955, "YRP": 0.021, "OTH": 0.02032383636685577, "NPP": 0.021}, 
+{"name": "Brycheiniog Tawe Nedd", "PiS": 0.11842617462091995, "KO": 0.10945004623693995, "PL50": 0.21544644616067066, "GRN": 0.04450505510914113, "LDM": 0.15437086645870698, "AWA": 0.0, "RFM": 0.3181592239449488, "YRP": 0.016, "OTH": 0.01964218746867262, "NPP": 0.016}, 
+{"name": "Caerdydd Ffynnon Taf", "PiS": 0.16735559656268034, "KO": 0.10240978262869056, "PL50": 0.24010622862493325, "GRN": 0.10919209548572148, "LDM": 0.11515436150355045, "AWA": 0.0, "RFM": 0.2225198304378421, "YRP": 0.03, "OTH": 0.02126210475658174, "NPP": 0.03}, 
+{"name": "Caerdydd Penarth", "PiS": 0.15645982238544787, "KO": 0.09614336488386795, "PL50": 0.30927146960892077, "GRN": 0.13405026896696337, "LDM": 0.05764747161510348, "AWA": 0.0, "RFM": 0.2049919750295571, "YRP": 0.033, "OTH": 0.021435627510139495, "NPP": 0.033}, 
+{"name": "Casnewydd Islwyn", "PiS": 0.1681736015826647, "KO": 0.11095168239763017, "PL50": 0.20314201795678075, "GRN": 0.07109809483263405, "LDM": 0.05363053064209243, "AWA": 0.0, "RFM": 0.3510135100317454, "YRP": 0.024, "OTH": 0.021990562556452455, "NPP": 0.024}, 
+{"name": "Ceredigion Penfro", "PiS": 0.08499721045524478, "KO": 0.11602323165944162, "PL50": 0.4226184153195269, "GRN": 0.045074545065470366, "LDM": 0.08282601874945514, "AWA": 0.0, "RFM": 0.2119859718025257, "YRP": 0.014, "OTH": 0.01847460694833548, "NPP": 0.014}, 
+{"name": "Clwyd", "PiS": 0.15200519366675738, "KO": 0.20004899557781136, "PL50": 0.21759033399984562, "GRN": 0.04941046228341586, "LDM": 0.04338317314889951, "AWA": 0.0, "RFM": 0.29358229606796493, "YRP": 0.019, "OTH": 0.02297954525530534, "NPP": 0.019}, 
+{"name": "Fflint Wrecsam", "PiS": 0.16265759771347732, "KO": 0.13941661586225063, "PL50": 0.2064780603564409, "GRN": 0.05438278330797058, "LDM": 0.04814826557074954, "AWA": 0.0, "RFM": 0.34645601557114675, "YRP": 0.021, "OTH": 0.021460661617964186, "NPP": 0.021}, 
+{"name": "Gwynedd Maldwyn", "PiS": 0.07425485676440977, "KO": 0.07894426475403139, "PL50": 0.47542048571558754, "GRN": 0.04197922967246392, "LDM": 0.07059765881586084, "AWA": 0.0, "RFM": 0.22482308910964904, "YRP": 0.012, "OTH": 0.01798041516799736, "NPP": 0.012}, 
+{"name": "Gŵyr Abertawe", "PiS": 0.16244676930048338, "KO": 0.09461394965802969, "PL50": 0.23872601082802244, "GRN": 0.07614813195208534, "LDM": 0.08423932682951737, "AWA": 0.0, "RFM": 0.30220261870925574, "YRP": 0.024, "OTH": 0.02102319272260602, "NPP": 0.024}, 
+{"name": "Pen-y-Bont Bro Morgannwg", "PiS": 0.1635244578513882, "KO": 0.1538653570687564, "PL50": 0.22255568084528957, "GRN": 0.0603457664983755, "LDM": 0.03978512403408825, "AWA": 0.0, "RFM": 0.3168535155748045, "YRP": 0.022, "OTH": 0.02207009812729759, "NPP": 0.022}, 
+{"name": "Pontypridd Cynon Merthyr", "PiS": 0.16148632571309537, "KO": 0.05991897401226806, "PL50": 0.2819347930394305, "GRN": 0.05434202007260832, "LDM": 0.039261557762581965, "AWA": 0.0, "RFM": 0.363876960368858, "YRP": 0.021, "OTH": 0.020179369031157805, "NPP": 0.021}, 
+{"name": "Sir Fynwy Torfaen", "PiS": 0.17661226663577423, "KO": 0.17355532865666687, "PL50": 0.1796307883390871, "GRN": 0.0684146865355311, "LDM": 0.0506728779100663, "AWA": 0.0, "RFM": 0.3060199361162541, "YRP": 0.024, "OTH": 0.023094115806620318, "NPP": 0.024}, 
+{"name": "Sir Gaerfyrddin", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 1", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 2", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 3", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 4", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 5", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 6", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 7", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 8", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 9", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 10", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 11", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 12", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 13", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 14", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 15", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 16", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 17", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 18", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 19", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 20", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 21", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 22", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 23", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 24", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}, 
+{"name": "Placeholder 25", "PiS": 0.09259734756062371, "KO": 0.08131209436196947, "PL50": 0.4265869041983232, "GRN": 0.03356462691417676, "LDM": 0.028169781031748633, "AWA": 0.0, "RFM": 0.3032708510554234, "YRP": 0.012, "OTH": 0.01749839487773487, "NPP": 0.012}]};
+
+// --- Added constituency seat counts ---
+const CONSTITUENCY_SEATS = {
+  "1 – Legnica": 12,
+  "2 – Wałbrzych": 8,
+  "Blaenau Gwent Caerffili Rhymni": 14,
+  "Brycheiniog Tawe Nedd": 12,
+  "Caerdydd Ffynnon Taf": 13,
+  "Caerdydd Penarth": 15,
+  "Casnewydd Islwyn": 12,
+  "Ceredigion Penfro": 12,
+  "Clwyd": 10,
+  "Fflint Wrecsam": 9,
+  "Gwynedd Maldwyn": 12,
+  "Gŵyr Abertawe": 8,
+  "Pen-y-Bont Bro Morgannwg": 14,
+  "Pontypridd Cynon Merthyr": 10,
+  "Sir Fynwy Torfaen": 9,
+  "Sir Gaerfyrddin": 10,
+  "Placeholder 1": 9,
+   "Placeholder 2": 12,
+   "Placeholder 3": 20,
+   "Placeholder 12": 6,
+   "Placeholder 5": 12,
+   "Placeholder 6": 11,
+   "Placeholder 7": 15,
+   "Placeholder 8": 14,
+   "Placeholder 9": 12,
+   "Placeholder 10": 14,
+   "Placeholder 11": 9,
+   "Placeholder 12": 7,
+   "Placeholder 13": 9,
+   "Placeholder 14": 9,
+   "Placeholder 15": 12,
+   "Placeholder 16": 9,
+   "Placeholder 17": 16,
+   "Placeholder 18": 8,
+   "Placeholder 19": 10,
+   "Placeholder 20": 12,
+   "Placeholder 21": 9,
+   "Placeholder 22": 9,
+   "Placeholder 23": 10,
+   "Placeholder 24": 8,
+   "Placeholder 25": 12
+};
+
+const PARTIES = ["PiS", "KO", "PL50", "GRN", "LDM", "RFM", "YRP", "NPP"];
+const PARTY_COLORS = {"PiS":"#e4003b","KO":"#0087dc","PL50":"#005b54","GRN":"#6ab023","LDM":"#faa61a","RFM":"#23c7df","YRP":"#f76bee","NPP":"#9b59b6"};
+const GE2024 = {"PiS":36.2,"KO":25.1,"PL50":20.7,"GRN":4.4,"LDM":4.3,"RFM":1.1,"YRP":0.0,"NPP":0.0};
+const DEFAULTS = {"PiS":14.0,"KO":11.0,"PL50":30.0,"GRN":6.0,"LDM":6.0,"RFM":29.0,"YRP":0.0,"NPP":0.0};
+
+const parties = PARTIES.map(name => ({ 
+  name, 
+  color: PARTY_COLORS[name] || "#999", 
+  ge2024: GE2024[name], 
+  votes: DEFAULTS[name], 
+  final: 0 
+}));
+
+const totalSeats = 16 * 6;
+const calculateBtn = document.getElementById('calculate');
+const resetBtn = document.getElementById('reset');
+
+function renderTable(){
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = parties.map((p,i)=>`
+    <tr>
+      <td class="party-column" style="--party-color: ${p.color}">${p.name}</td>
+      <td class="ge2024-column">${p.ge2024.toFixed(1)}%</td>
+      <td>
+        <div class="input-wrapper">
+          <input type="number" id="votes-${i}" value="${p.votes.toFixed(1)}" min="0" max="100" step="0.1">
+          <span class="percent-sign">%</span>
+        </div>
+      </td>
+      <td class="seats-column" id="seats-${i}">—</td>
+    </tr>
+  `).join('');
+
+  const inputs = document.querySelectorAll('.input-wrapper input');
+  inputs.forEach((input, index) => {
+    input.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter') { e.preventDefault(); if(inputs[index+1]) inputs[index+1].focus(); }
+    });
+    input.addEventListener('focus', () => { input.dataset.previous = input.value; input.value=''; input.style.borderColor='#cbd5e1'; });
+    input.addEventListener('blur', () => { 
+      if(input.value==='') input.value=input.dataset.previous||'0.0'; 
+      if(parseFloat(input.value) > 100) input.value='100';
+      input.style.borderColor = '#cbd5e1';
+    });
+    input.addEventListener('input', () => {
+      let val = parseFloat(input.value) || 0;
+      if(val>100){ input.value = 100; input.style.borderColor = 'red'; }
+      else input.style.borderColor = '#cbd5e1';
+      updateVoteTotal();
+      calculateBtn.style.background = '#ffa500';
+    });
+  });
+  updateVoteTotal();
+}
+
+function updateVoteTotal() {
+  let sum = 0;
+  parties.forEach((p,i)=>{
+    const val = parseFloat(document.getElementById(`votes-${i}`).value)||0;
+    sum += val;
+  });
+  document.getElementById('total-votes').textContent = sum.toFixed(1)+'%';
+}
+
+function computeConstituencyShares() {
+  const target = {};
+  PARTIES.forEach((name, i)=>{ target[name] = (parseFloat(document.getElementById(`votes-${i}`).value)||0)/100; });
+  const base = BASELINE.baseline_national;
+  const eps = 1e-9;
+
+  return BASELINE.constituencies.map(row => {
+    const out = { name: row.name };
+    let sum = 0;
+    const all = PARTIES.concat(["AWA","OTH"]);
+    all.forEach(p => {
+      const baseNat = base[p] ?? 0;
+      const targetNat = (p in target) ? target[p] : baseNat;
+      const ratio = (baseNat > eps) ? (targetNat / baseNat) : (targetNat > 0 ? (targetNat / eps) : 0);
+      const val = (row[p] ?? 0) * ratio;
+      out[p] = val;
+      sum += val;
+    });
+    if (sum > 0) all.forEach(p => out[p] = out[p] / sum);
+    return out;
+  });
+}
+
+// D'Hondt with national vote tie-breaker (one seat per round)
+const TIE_ORDER = ["PiS","KO","PL50","GRN","LDM","RFM","YRP","NPP","AWA","OTH"];
+function dhondtSeats(votes, seats=6, nationalVotes) {
+  const alloc = {"PiS":0,"KO":0,"PL50":0,"GRN":0,"LDM":0,"RFM":0,"YRP":0,"NPP":0,"AWA":0,"OTH":0};
+  for (let s=0; s<seats; s++) {
+    const quot = TIE_ORDER.map(p => ({ p, q: (votes[p]||0)/(alloc[p]+1) }));
+    let best = quot[0];
+    for (let i=1; i<quot.length; i++) {
+      const x = quot[i];
+      if (x.q > best.q || (Math.abs(x.q - best.q) < 1e-12 && (nationalVotes[x.p]||0) > (nationalVotes[best.p]||0))) {
+        best = x;
+      }
+    }
+    alloc[best.p] += 1;
+  }
+  return alloc;
+}
+
+function calculate(){
+  const nationalVotes = {};
+  parties.forEach((p,i)=>{
+    p.votes = parseFloat(document.getElementById(`votes-${i}`).value)||0;
+    nationalVotes[p.name] = p.votes;
+  });
+
+  const perConst = computeConstituencyShares();
+  const totals = {"PiS":0,"KO":0,"PL50":0,"GRN":0,"LDM":0,"RFM":0,"YRP":0,"NPP":0,"AWA":0,"OTH":0};
+  perConst.forEach(row => {
+    const s = dhondtSeats(row, CONSTITUENCY_SEATS[row.name] || 6, nationalVotes);
+    Object.keys(totals).forEach(p => totals[p] += s[p]||0);
+  });
+
+  PARTIES.forEach((name,i)=>{
+    document.getElementById(`seats-${i}`).textContent = totals[name];
+    parties[i].final = totals[name];
+  });
+
+  document.getElementById('total-seats').textContent = PARTIES.reduce((s,n)=>s+totals[n],0);
+  calculateBtn.style.background = '#008500';
+
+  updateCoalitionFromTotals(totals);
+}
+
+resetBtn.addEventListener('click', ()=>{
+  parties.forEach((p,i)=>{
+    const name = p.name;
+    const defaultVal = DEFAULTS[name];
+    document.getElementById(`votes-${i}`).value = defaultVal.toFixed(1);
+  });
+  calculate();
+});
+
+document.getElementById('calculate').addEventListener('click', calculate);
+
+// Build table immediately, then run calculation after DOM ready so coalition legend exists
+renderTable();
+document.addEventListener('DOMContentLoaded', () => { calculate(); });
+
+/* ---------------- Coalition Builder Logic ---------------- */
+const COAL_TOTAL = 460;
+const COAL_MAJ = 231;
+let selected = []; // party names currently in coalition
+
+const legend = document.getElementById("legend");
+const overlay = document.getElementById("coalition-overlay");
+const counter = document.getElementById("counter");
+
+function toggleParty(name){
+  if(selected.includes(name)) selected = selected.filter(n=>n!==name);
+  else selected.push(name);
+  renderCoalition(lastTotalsCache);
+}
+
+let lastTotalsCache = null;
+function updateCoalitionFromTotals(totals){
+  lastTotalsCache = totals;
+  renderCoalition(totals);
+}
+
+function renderCoalition(totals){
+  if(!totals) return;
+  overlay.innerHTML = "";
+  legend.innerHTML = "";
+
+  PARTIES.forEach(name => {
+    const seats = totals[name]||0;
+    const item = document.createElement('div');
+    item.className = 'legend-item' + (selected.includes(name) ? ' active' : '');
+    item.innerHTML = `<div class="legend-box" style="background:${PARTY_COLORS[name]||'#999'}"></div> <strong>${name}</strong> ${seats}`;
+    item.onclick = ()=>toggleParty(name);
+    legend.appendChild(item);
+  });
+
+  const totalSelected = selected.reduce((s,name)=> s + (totals[name]||0), 0);
+  const widthPercent = (totalSelected / COAL_TOTAL) * 100;
+
+  overlay.style.width = "0%";
+  overlay.innerHTML = "";
+  if(totalSelected > 0){
+    selected.forEach(name=>{
+      const seats = totals[name]||0;
+      const seg = document.createElement('div');
+      seg.className = 'segment';
+      seg.style.flexBasis = ((seats / totalSelected) * 100) + "%";
+      seg.style.background = PARTY_COLORS[name]||"#999";
+      seg.title = `${name}: ${seats}`;
+      overlay.appendChild(seg);
+    });
+  }
+
+  requestAnimationFrame(()=>{ overlay.style.width = widthPercent + "%"; });
+
+  counter.textContent = `${totalSelected} / ${COAL_TOTAL}`;
+  counter.style.color = totalSelected >= COAL_MAJ ? "#2BA84A" : "#000";
+
+  document.querySelectorAll(".legend-item").forEach(el=>{
+    const name = el.querySelector("strong").textContent;
+    el.classList.toggle("active", selected.includes(name));
+  });
+}
+</script>
+
+</body>
+</html>
