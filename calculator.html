@@ -6,30 +6,47 @@
 <title>Senedd Calculator + Coalition Builder</title>
 <style>
   body { font-family: Inter, system-ui, sans-serif; background: #fff; color: #0f172a; margin: 0; padding: 0 24px 24px 24px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-  th, td { padding: 4px 6px; border: 1px solid #e2e8f0; }
-  th { background: #f1f5f9; font-weight: 600; text-align: left; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; table-layout: fixed; }
+  th, td { padding: 4px 6px; border: 1px solid #e2e8f0; width: 20%; text-align: left; word-wrap: break-word; }
+  th { background: #f1f5f9; font-weight: 600; }
   td.party-column { font-weight: bold; position: relative; padding-left: 14px; color: black; }
   td.party-column::before { content: ""; position: absolute; left: 0; top: 0; width: 8px; height: 100%; border-radius: 2px 0 0 2px; background-color: var(--party-color); }
   td.ge2024-column { font-style: italic; color: #999999; }
-  td.seats-column { font-weight: bold; text-align: center; }
-  .input-wrapper { display: flex; align-items: center; }
-  .input-wrapper input { width: 50px; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; text-align: left; margin-right: 4px; transition: border-color 0.3s ease; }
+  td.seats-column, td.diff-column { font-weight: bold; text-align: center; }
+  .diff-column.positive { color: #008500; }
+  .diff-column.negative { color: #bb0000; }
+  .diff-column.equal { color: #555555; }
+
+  /* Input alignment */
+  .input-wrapper { display: flex; align-items: center; justify-content: flex-start; }
+  .input-wrapper input {
+    width: 50px; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px;
+    text-align: left; margin-right: 4px; transition: border-color 0.3s ease;
+  }
   .percent-sign { font-size: 14px; }
+
+  /* Buttons */
   .button-container { display: flex; gap: 8px; margin-top: 14px; }
-  button#calculate { background: #008500; color: #fff; border: none; border-radius: 6px; padding: 8px 14px; cursor: pointer; transition: background 0.3s ease; flex: 0 0 80%; }
-  button#reset { background: #008500; color: #fff; border: none; border-radius: 6px; padding: 8px 14px; cursor: pointer; transition: background 0.3s ease; flex: 0 0 20%; }
+  button#calculate, button#reset {
+    background: #008500; color: #fff; border: none; border-radius: 6px;
+    padding: 8px 14px; cursor: pointer; transition: background 0.3s ease;
+  }
+  button#calculate { flex: 0 0 80%; }
+  button#reset { flex: 0 0 20%; }
+
   tfoot td { font-weight: bold; text-align: center; background: #f1f5f9; }
   tfoot td:first-child { text-align: left; padding-left: 14px; }
   input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   input[type=number] { -moz-appearance: textfield; }
 
+  /* Coalition builder */
   #coalition-builder { margin-top: 48px; }
   .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   h3 { margin: 0; }
   .legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 15px; }
   .legend-item { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;
-    border: 1px solid #ccc; border-radius: 8px; padding: 6px 10px; background: #f3f3f3; transition: all 0.25s ease; opacity: 0.6; font-weight: normal; }
+    border: 1px solid #ccc; border-radius: 8px; padding: 6px 10px; background: #f3f3f3;
+    transition: all 0.25s ease; opacity: 0.6; font-weight: normal; }
   .legend-item:hover { transform: translateY(-1px); }
   .legend-item.active { opacity: 1; background: #ffffff; border-color: #999; box-shadow: 0 1px 3px rgba(0,0,0,0.15); font-weight: bold; }
   .legend-box { width: 20px; height: 20px; border-radius: 4px; }
@@ -41,6 +58,20 @@
     left: 50%; }
   .counter { font-size: 22px; font-weight: bold; text-align: center; margin-bottom: 8px; }
   .note { font-size: 13px; color: #555; text-align: center; }
+
+  /* Mobile scaling */
+  @media (max-width: 768px) {
+    table, th, td { font-size: 13px; }
+    .counter { font-size: 18px; }
+    h3 { font-size: 16px; }
+    .legend-item { font-size: 12px; padding: 5px 8px; }
+    .input-wrapper input { width: 45px; }
+  }
+
+  @media (max-width: 480px) {
+    table, th, td { font-size: 12px; }
+    .input-wrapper input { width: 40px; }
+  }
 </style>
 </head>
 <body>
@@ -49,9 +80,10 @@
   <thead>
     <tr>
       <th>Party</th>
-      <th>2021</th>
+      <th>2023</th>
       <th>Votes (%)</th>
       <th>Seats</th>
+      <th>+/- 2023</th>
     </tr>
   </thead>
   <tbody id="tbody"></tbody>
@@ -61,6 +93,7 @@
       <td></td>
       <td id="total-votes">0.0%</td>
       <td id="total-seats">0</td>
+      <td></td>
     </tr>
   </tfoot>
 </table>
@@ -72,18 +105,15 @@
 
 <div id="coalition-builder">
   <div class="header-container">
-    <h3>Senedd Coalition Builder (User Generated)</h3>
+    <h3>Coalition Builder (User Generated)</h3>
   </div>
-
   <div class="legend" id="legend"></div>
-
   <div class="bar-container" id="bar">
     <div class="coalition-overlay" id="coalition-overlay"></div>
     <div class="majority-line" title="Majority (49 seats)"></div>
   </div>
-
   <div class="counter" id="counter">0 / 96</div>
-  <div class="note">Majority = 49 seats</div>
+  <div class="note">Majority = 231 seats</div>
 </div>
 
 <script>
@@ -130,9 +160,8 @@ const BASELINE = {"baseline_national": {"PiS": 0.175, "KO": 0.155, "PL50": 0.13,
 {"name": "38 – Piła", "PiS": 0.143905367, "KO": 0.176053746, "PL50": 0.159430556, "PSL": 0.147166667, "Lewica": 0.106070519, "AWA": 0.0, "Razem": 0.092096721, "Konf": 0.085875, "OTH": 0.038421053, "KKP": 0.076333333}, 
 {"name": "39 – Poznań", "PiS": 0.09674435, "KO": 0.222604235, "PL50": 0.149319444, "PSL": 0.137833333, "Lewica": 0.161737228, "AWA": 0.0, "Razem": 0.16780546, "Konf": 0.07375, "OTH": 0.016736842, "KKP": 0.065555556}, 
 {"name": "40 – Koszalin", "PiS": 0.155028249, "KO": 0.195340391, "PL50": 0.111493056, "PSL": 0.102916667, "Lewica": 0.11424915, "AWA": 0.0, "Razem": 0.087450052, "Konf": 0.07525, "OTH": 0.030210526, "KKP": 0.066888889}, 
-{"name": "41 – Szczecin", "PiS": 0.142323446, "KO": 0.202610749, "PL50": 0.113930556, "PSL": 0.105166667, "Lewica": 0.120915947, "AWA": 0.0, "Razem": 0.108637695, "Konf": 0.07425, "OTH": 0.032947368, "KKP": 0.066}]};  /* keep your full data block here exactly as before */
+{"name": "41 – Szczecin", "PiS": 0.142323446, "KO": 0.202610749, "PL50": 0.113930556, "PSL": 0.105166667, "Lewica": 0.120915947, "AWA": 0.0, "Razem": 0.108637695, "Konf": 0.07425, "OTH": 0.032947368, "KKP": 0.066}]};
 
-/* ---- Constituency seat counts ---- */
 const CONSTITUENCY_SEATS = {
   "1 – Legnica": 12,
   "2 – Wałbrzych": 8,
@@ -179,47 +208,72 @@ const CONSTITUENCY_SEATS = {
 
 /* ---- Party setup ---- */
 const PARTIES = ["PiS", "KO", "PL50", "PSL", "Lewica", "Razem", "Konf", "KKP"];
-const PARTY_COLORS = {"PiS":"#e4003b","KO":"#0087dc","PL50":"#005b54","PSL":"#6ab023","Lewica":"#faa61a","Razem":"#23c7df","Konf":"#f76bee","KKP":"#9b59b6"};
-const GE2024 = {"PiS":36.2,"KO":25.1,"PL50":20.7,"PSL":4.4,"Lewica":4.3,"Razem":1.1,"Konf":0.0,"KKP":0.0};
+const PARTY_COLORS = {"PiS":"#2241B5","KO":"#FF6611","PL50":"#FFD700","PSL":"#3DB53A","Lewica":"#C00000","Razem":"#CC00CC","Konf":"#000000","KKP":"#A75325"};
+const GE2024 = {"PiS":35.4,"KO":30.7,"PL50":7.2,"PSL":5.5,"Lewica":5.6,"Razem":2.1,"Konf":6.3,"KKP":0.9};
 const DEFAULTS = {"PiS":29.9,"KO":31.7,"PL50":2.2,"PSL":3.2,"Lewica":6.5,"Razem":3.6,"Konf":14.7,"KKP":6.2};
+const PREV_2023 = {"PiS":194,"KO":157,"PL50":33,"PSL":28,"Lewica":19,"Razem":7,"Konf":16,"KKP":2};
 
-const parties = PARTIES.map(name => ({name, color: PARTY_COLORS[name] || "#999", ge2024: GE2024[name], votes: DEFAULTS[name], final: 0 }));
+const parties = PARTIES.map(name => ({
+  name,
+  color: PARTY_COLORS[name] || "#999",
+  ge2024: GE2024[name],
+  votes: DEFAULTS[name],
+  final: 0
+}));
 
-/* ---- Rendering & event setup ---- */
-function renderTable() {
-  const tbody = document.getElementById('tbody');
-  tbody.innerHTML = parties.map((p,i)=>`
+/* ---- Render table ---- */
+function renderTable(){
+  const tbody=document.getElementById('tbody');
+  tbody.innerHTML=parties.map((p,i)=>`
     <tr>
       <td class="party-column" style="--party-color:${p.color}">${p.name}</td>
       <td class="ge2024-column">${p.ge2024.toFixed(1)}%</td>
       <td><div class="input-wrapper"><input type="number" id="votes-${i}" value="${p.votes.toFixed(1)}" min="0" max="100" step="0.1"><span class="percent-sign">%</span></div></td>
       <td class="seats-column" id="seats-${i}">—</td>
+      <td class="diff-column" id="diff-${i}">—</td>
     </tr>`).join('');
+
   const inputs=document.querySelectorAll('.input-wrapper input');
   inputs.forEach((input,index)=>{
-    input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();if(inputs[index+1])inputs[index+1].focus();}});
-    input.addEventListener('input',()=>{updateVoteTotal();document.getElementById('calculate').style.background='#ffa500';});
+    input.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){e.preventDefault();if(inputs[index+1])inputs[index+1].focus();}
+    });
+    input.addEventListener('input',()=>{
+      updateVoteTotal();
+      document.getElementById('calculate').style.background='#ffa500';
+    });
   });
   updateVoteTotal();
 }
-function updateVoteTotal(){let sum=0;parties.forEach((p,i)=>{sum+=parseFloat(document.getElementById(`votes-${i}`).value)||0;});document.getElementById('total-votes').textContent=sum.toFixed(1)+'%';}
+
+function updateVoteTotal(){
+  let sum=0;
+  parties.forEach((p,i)=>{
+    sum+=parseFloat(document.getElementById(`votes-${i}`).value)||0;
+  });
+  document.getElementById('total-votes').textContent=sum.toFixed(1)+'%';
+}
 
 /* ---- Proportional swing ---- */
-function computeConstituencyShares() {
-  const target={};PARTIES.forEach((n,i)=>target[n]=(parseFloat(document.getElementById(`votes-${i}`).value)||0)/100);
+function computeConstituencyShares(){
+  const target={};
+  PARTIES.forEach((n,i)=>target[n]=(parseFloat(document.getElementById(`votes-${i}`).value)||0)/100);
   const base=BASELINE.baseline_national;const eps=1e-9;
   return BASELINE.constituencies.map(row=>{
     const out={name:row.name};let sum=0;
     PARTIES.forEach(p=>{
-      const baseNat=base[p]??0;const targetNat=target[p]??baseNat;
+      const baseNat=base[p]??0;
+      const targetNat=target[p]??baseNat;
       const ratio=(baseNat>eps)?(targetNat/baseNat):(targetNat>0?(targetNat/eps):0);
-      const val=(row[p]??0)*ratio;out[p]=val;sum+=val;
+      const val=(row[p]??0)*ratio;
+      out[p]=val;sum+=val;
     });
-    if(sum>0)PARTIES.forEach(p=>out[p]=out[p]/sum);return out;
+    if(sum>0)PARTIES.forEach(p=>out[p]=out[p]/sum);
+    return out;
   });
 }
 
-/* ---- D’Hondt with threshold ---- */
+/* ---- D’Hondt ---- */
 function dhondtSeats(votes,seats=6,nationalVotes,validParties){
   const alloc=Object.fromEntries(validParties.map(p=>[p,0]));
   for(let s=0;s<seats;s++){
@@ -237,9 +291,12 @@ function dhondtSeats(votes,seats=6,nationalVotes,validParties){
 /* ---- Calculate ---- */
 function calculate(){
   const nationalVotes={};
-  parties.forEach((p,i)=>{p.votes=parseFloat(document.getElementById(`votes-${i}`).value)||0;nationalVotes[p.name]=p.votes;});
+  parties.forEach((p,i)=>{
+    p.votes=parseFloat(document.getElementById(`votes-${i}`).value)||0;
+    nationalVotes[p.name]=p.votes;
+  });
 
-  // --- Apply 5% threshold ---
+  // --- 5% threshold ---
   const validParties=PARTIES.filter(p=>nationalVotes[p]>=5);
   const excluded=PARTIES.filter(p=>nationalVotes[p]<5);
 
@@ -253,7 +310,18 @@ function calculate(){
 
   excluded.forEach(p=>totals[p]=0);
 
-  PARTIES.forEach((n,i)=>{document.getElementById(`seats-${i}`).textContent=totals[n];parties[i].final=totals[n];});
+  PARTIES.forEach((n,i)=>{
+    const seats=totals[n];
+    document.getElementById(`seats-${i}`).textContent=seats;
+    parties[i].final=seats;
+
+    const diff=seats-(PREV_2023[n]||0);
+    const diffCell=document.getElementById(`diff-${i}`);
+    if(diff>0){diffCell.textContent=`+${diff}`;diffCell.className='diff-column positive';}
+    else if(diff<0){diffCell.textContent=`${diff}`;diffCell.className='diff-column negative';}
+    else{diffCell.textContent='(=)';diffCell.className='diff-column equal';}
+  });
+
   document.getElementById('total-seats').textContent=Object.values(totals).reduce((a,b)=>a+b,0);
   document.getElementById('calculate').style.background='#008500';
   updateCoalitionFromTotals(totals);
@@ -269,24 +337,52 @@ renderTable();
 document.addEventListener('DOMContentLoaded',()=>calculate());
 
 /* ---- Coalition Builder ---- */
-const COAL_TOTAL=460,COAL_MAJ=231;let selected=[];const legend=document.getElementById("legend"),overlay=document.getElementById("coalition-overlay"),counter=document.getElementById("counter");
-function toggleParty(n){if(selected.includes(n))selected=selected.filter(x=>x!==n);else selected.push(n);renderCoalition(lastTotalsCache);}
+const COAL_TOTAL=460,COAL_MAJ=231;
+let selected=[];
+const legend=document.getElementById("legend"),overlay=document.getElementById("coalition-overlay"),counter=document.getElementById("counter");
+
+function toggleParty(n){
+  if(selected.includes(n))selected=selected.filter(x=>x!==n);
+  else selected.push(n);
+  renderCoalition(lastTotalsCache);
+}
+
 let lastTotalsCache=null;
 function updateCoalitionFromTotals(t){lastTotalsCache=t;renderCoalition(t);}
+
 function renderCoalition(t){
-  if(!t)return;overlay.innerHTML="";legend.innerHTML="";
+  if(!t)return;
+  overlay.innerHTML="";legend.innerHTML="";
   PARTIES.forEach(n=>{
-    const s=t[n]||0;const item=document.createElement('div');
+    const s=t[n]||0;
+    const item=document.createElement('div');
     item.className='legend-item'+(selected.includes(n)?' active':'');
     item.innerHTML=`<div class="legend-box" style="background:${PARTY_COLORS[n]||'#999'}"></div> <strong>${n}</strong> ${s}`;
-    item.onclick=()=>toggleParty(n);legend.appendChild(item);
+    item.onclick=()=>toggleParty(n);
+    legend.appendChild(item);
   });
+
   const totalSel=selected.reduce((s,n)=>s+(t[n]||0),0);
-  const width=(totalSel/COAL_TOTAL)*100;overlay.style.width="0%";overlay.innerHTML="";
-  if(totalSel>0){selected.forEach(n=>{const s=t[n]||0;const seg=document.createElement('div');seg.className='segment';seg.style.flexBasis=((s/totalSel)*100)+'%';seg.style.background=PARTY_COLORS[n]||"#999";overlay.appendChild(seg);});}
+  const width=(totalSel/COAL_TOTAL)*100;
+  overlay.style.width="0%";
+  overlay.innerHTML="";
+  if(totalSel>0){
+    selected.forEach(n=>{
+      const s=t[n]||0;
+      const seg=document.createElement('div');
+      seg.className='segment';
+      seg.style.flexBasis=((s/totalSel)*100)+'%';
+      seg.style.background=PARTY_COLORS[n]||"#999";
+      overlay.appendChild(seg);
+    });
+  }
   requestAnimationFrame(()=>overlay.style.width=width+"%");
-  counter.textContent=`${totalSel} / ${COAL_TOTAL}`;counter.style.color=totalSel>=COAL_MAJ?"#2BA84A":"#000";
-  document.querySelectorAll(".legend-item").forEach(el=>{const n=el.querySelector("strong").textContent;el.classList.toggle("active",selected.includes(n));});
+  counter.textContent=`${totalSel} / ${COAL_TOTAL}`;
+  counter.style.color=totalSel>=COAL_MAJ?"#2BA84A":"#000";
+  document.querySelectorAll(".legend-item").forEach(el=>{
+    const n=el.querySelector("strong").textContent;
+    el.classList.toggle("active",selected.includes(n));
+  });
 }
 </script>
 </body>
