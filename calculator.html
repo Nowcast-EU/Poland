@@ -3,9 +3,44 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Senedd Calculator + Coalition Builder</title>
+
+<!-- Primary Meta Tags -->
+<title>🇵🇱 Poland | Seat Calculator</title>
+<meta name="title" content="🇵🇱 Poland | Seat Calculator">
+<meta name="description" content="">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://nowcast-eu.github.io/Poland/calculator.html">
+<meta property="og:title" content="🇵🇱 Poland | Seat Calculator">
+<meta property="og:description" content="">
+<meta property="og:image" content="https://nowcast-eu.github.io/Poland/thumbnail.png">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:url" content="https://nowcast-eu.github.io/Poland/calculator.html">
+<meta name="twitter:title" content="🇵🇱 Poland | Seat Calculator">
+<meta name="twitter:description" content="">
+<meta name="twitter:image" content="https://nowcast-eu.github.io/Poland/thumbnail.png">
+
+<link rel="icon" type="image/png" href="https://nowcast-eu.github.io/Poland/favicon.png">
+
 <style>
-  body { font-family: Inter, system-ui, sans-serif; background: #fff; color: #0f172a; margin: 0; padding: 0 24px 24px 24px; }
+  body {
+    font-family: Inter, system-ui, sans-serif;
+    background: #fff;
+    color: #0f172a;
+    margin: 0;
+    padding: 0 24px 24px 24px;
+  }
+
+  h1 {
+    text-align: center;
+    font-weight: 600;
+    font-size: 1.6rem;
+    margin: 28px 0 12px 0;
+  }
+
   table { width: 100%; border-collapse: collapse; margin-top: 12px; table-layout: fixed; }
   th, td { padding: 4px 6px; border: 1px solid #e2e8f0; width: 20%; text-align: left; word-wrap: break-word; }
   th { background: #f1f5f9; font-weight: 600; }
@@ -17,7 +52,6 @@
   .diff-column.negative { color: #bb0000; }
   .diff-column.equal { color: #555555; }
 
-  /* Input alignment */
   .input-wrapper { display: flex; align-items: center; justify-content: flex-start; }
   .input-wrapper input {
     width: 50px; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px;
@@ -25,7 +59,6 @@
   }
   .percent-sign { font-size: 14px; }
 
-  /* Buttons */
   .button-container { display: flex; gap: 8px; margin-top: 14px; }
   button#calculate, button#reset {
     background: #008500; color: #fff; border: none; border-radius: 6px;
@@ -36,7 +69,8 @@
 
   tfoot td { font-weight: bold; text-align: center; background: #f1f5f9; }
   tfoot td:first-child { text-align: left; padding-left: 14px; }
-  input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   input[type=number] { -moz-appearance: textfield; }
 
   /* Coalition builder */
@@ -44,22 +78,25 @@
   .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   h3 { margin: 0; }
   .legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 15px; }
-  .legend-item { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;
+  .legend-item {
+    display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;
     border: 1px solid #ccc; border-radius: 8px; padding: 6px 10px; background: #f3f3f3;
-    transition: all 0.25s ease; opacity: 0.6; font-weight: normal; }
+    transition: all 0.25s ease; opacity: 0.6; font-weight: normal;
+  }
   .legend-item:hover { transform: translateY(-1px); }
   .legend-item.active { opacity: 1; background: #ffffff; border-color: #999; box-shadow: 0 1px 3px rgba(0,0,0,0.15); font-weight: bold; }
   .legend-box { width: 20px; height: 20px; border-radius: 4px; }
   .bar-container { position: relative; height: 117px; background: #f0f0f0; border-radius: 10px; overflow: hidden; margin-bottom: 12px; width: 100%; }
   .coalition-overlay { position: absolute; top: 0; left: 0; height: 100%; width: 0%; border-top-left-radius: 10px; border-bottom-left-radius: 10px; display: flex; overflow: hidden; transition: width 1s ease; }
   .segment { height: 100%; flex-shrink: 0; border-radius: 0; }
-  .majority-line { position: absolute; top: 0; bottom: 0; width: 2px;
+  .majority-line {
+    position: absolute; top: 0; bottom: 0; width: 2px;
     background: repeating-linear-gradient(to bottom,#333,#333 5px,transparent 5px,transparent 10px);
-    left: 50%; }
+    left: 50%;
+  }
   .counter { font-size: 22px; font-weight: bold; text-align: center; margin-bottom: 8px; }
   .note { font-size: 13px; color: #555; text-align: center; }
 
-  /* Mobile scaling */
   @media (max-width: 768px) {
     table, th, td { font-size: 13px; }
     .counter { font-size: 18px; }
@@ -67,7 +104,6 @@
     .legend-item { font-size: 12px; padding: 5px 8px; }
     .input-wrapper input { width: 45px; }
   }
-
   @media (max-width: 480px) {
     table, th, td { font-size: 12px; }
     .input-wrapper input { width: 40px; }
@@ -75,6 +111,8 @@
 </style>
 </head>
 <body>
+
+<h1>Poland | @Nowcast_EU Interactive Seat Calculator</h1>
 
 <table>
   <thead>
@@ -110,14 +148,13 @@
   <div class="legend" id="legend"></div>
   <div class="bar-container" id="bar">
     <div class="coalition-overlay" id="coalition-overlay"></div>
-    <div class="majority-line" title="Majority (49 seats)"></div>
+    <div class="majority-line" title="Majority (231 seats)"></div>
   </div>
-  <div class="counter" id="counter">0 / 96</div>
+  <div class="counter" id="counter">0 / 460</div>
   <div class="note">Majority = 231 seats</div>
 </div>
 
 <script>
-/* ---- Baseline & Constituency Data ---- */
 const BASELINE = {"baseline_national": {"PiS": 0.175, "KO": 0.155, "PL50": 0.13, "PSL": 0.12, "Lewica": 0.11, "AWA": 0.0, "Razem": 0.1, "Konf": 0.09, "OTH": 0.04, "KKP": 0.08},
  "constituencies": [{"name": "1 – Legnica", "PiS": 0.172033898, "KO": 0.170550489, "PL50": 0.097048611, "PSL": 0.089583333, "Lewica": 0.117635447, "AWA": 0.0, "Razem": 0.097844399, "Konf": 0.079125, "OTH": 0.050842105, "KKP": 0.070333333},                    
  {"name": "2 – Wałbrzych", "PiS": 0.164816384, "KO": 0.187666124, "PL50": 0.109506944, "PSL": 0.101083333, "Lewica": 0.102792331, "AWA": 0.0, "Razem": 0.085574741, "Konf": 0.07525, "OTH": 0.035473684, "KKP": 0.066888889},                    
@@ -228,13 +265,28 @@ function renderTable(){
     <tr>
       <td class="party-column" style="--party-color:${p.color}">${p.name}</td>
       <td class="ge2024-column">${p.ge2024.toFixed(1)}%</td>
-      <td><div class="input-wrapper"><input type="number" id="votes-${i}" value="${p.votes.toFixed(1)}" min="0" max="100" step="0.1"><span class="percent-sign">%</span></div></td>
+      <td>
+        <div class="input-wrapper">
+          <input type="number" id="votes-${i}" value="${p.votes.toFixed(1)}" min="0" max="100" step="0.1">
+          <span class="percent-sign">%</span>
+        </div>
+      </td>
       <td class="seats-column" id="seats-${i}">—</td>
       <td class="diff-column" id="diff-${i}">—</td>
     </tr>`).join('');
 
   const inputs=document.querySelectorAll('.input-wrapper input');
   inputs.forEach((input,index)=>{
+    let originalValue = input.value;
+
+    input.addEventListener('focus',()=>{
+      originalValue = input.value;
+      input.value='';
+    });
+    input.addEventListener('blur',()=>{
+      if(input.value==='') input.value = originalValue;
+    });
+
     input.addEventListener('keydown',e=>{
       if(e.key==='Enter'){e.preventDefault();if(inputs[index+1])inputs[index+1].focus();}
     });
