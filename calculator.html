@@ -58,7 +58,6 @@
   th, td { 
     padding: 4px 6px; 
     border: 1px solid #e2e8f0; 
-    width: 20%; 
     text-align: left; 
     word-wrap: break-word; 
   }
@@ -79,7 +78,7 @@
   }
   .percent-sign { font-size: 14px; }
 
-  /* --- FIXED BUTTONS --- */
+  /* --- BUTTONS --- */
   .button-container { 
     display: flex; 
     gap: 8px; 
@@ -97,8 +96,11 @@
     padding: 8px 14px; 
     cursor: pointer; 
     transition: background 0.3s ease;
-    flex: 1; /* ensure even resizing without overflow */
   }
+
+  /* Calculate = 80%, Reset = 20% */
+  button#calculate { flex: 0 0 80%; }
+  button#reset { flex: 0 0 20%; }
 
   tfoot td { font-weight: bold; text-align: center; background: #f1f5f9; }
   tfoot td:first-child { text-align: left; padding-left: 14px; }
@@ -131,12 +133,20 @@
   .counter { font-size: 22px; font-weight: bold; text-align: center; margin-bottom: 8px; }
   .note { font-size: 13px; color: #555; text-align: center; }
 
+  /* --- MOBILE VIEW --- */
   @media (max-width: 768px) {
     table, th, td { font-size: 13px; }
     .counter { font-size: 18px; }
     h3 { font-size: 16px; }
     .legend-item { font-size: 12px; padding: 5px 8px; }
     .input-wrapper input { width: 45px; }
+
+    /* 👇 manually control column widths on mobile */
+    table th:nth-child(1), table td:nth-child(1) { width: 20%; } /* Party */
+    table th:nth-child(2), table td:nth-child(2) { width: 15%; } /* 2023 */
+    table th:nth-child(3), table td:nth-child(3) { width: 25%; } /* Votes */
+    table th:nth-child(4), table td:nth-child(4) { width: 20%; } /* Seats */
+    table th:nth-child(5), table td:nth-child(5) { width: 20%; } /* +/- */
   }
 
   @media (max-width: 480px) {
