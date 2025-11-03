@@ -79,16 +79,14 @@
   .percent-sign { font-size: 14px; }
 
   /* --- BUTTONS --- */
-  .button-container {
-  margin-left: -8px;   /* match mobile body padding */
-  margin-right: -8px;
-}
-@media (min-width: 769px) {
-  .button-container {
-    margin-left: -24px; /* match desktop body padding */
-    margin-right: -24px;
+  .button-container { 
+    display: flex; 
+    gap: 8px; 
+    margin-top: 14px; 
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
-}
 
   button#calculate, button#reset {
     background: #008500; 
