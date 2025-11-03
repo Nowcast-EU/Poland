@@ -153,6 +153,87 @@
     table, th, td { font-size: 12px; }
     .input-wrapper input { width: 40px; }
   }
+/* --- Responsive rectangular tab switcher --- */
+/* --- Final rectangular tab switcher --- */
+.tab-switcher {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f4f4f4;
+  border-radius: 12px;
+  padding: 3px;
+  border: 1px solid #d0d0d0;
+  overflow: hidden;
+  width: 140px;             /* base width desktop */
+  max-width: 100%;
+  height: 38px;
+  box-sizing: border-box;
+  -webkit-user-select: none; /* 👈 prevent highlight */
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.tab-btn {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  color: #111;
+  text-align: center;
+  line-height: 1;
+  white-space: nowrap;
+  transition: color 0.25s ease, font-weight 0.25s ease;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent; /* 👈 remove blue tap flash */
+}
+
+.tab-btn.active {
+  font-weight: 700;
+}
+
+.tab-btn:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.tab-pill {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  right: 50%;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 1;
+}
+
+/* --- Mobile scaling + perfect edge alignment --- */
+@media (max-width: 480px) {
+  .tab-switcher {
+    width: 120px;
+    height: 34px;
+    padding: 3px;
+  }
+  .tab-btn {
+    font-size: 13px;
+  }
+  .tab-pill {
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    right: 50%;
+  }
+}
+
 </style>
 </head>
 
@@ -187,9 +268,16 @@
 </div>
 
 <div id="coalition-builder">
-  <div class="header-container">
-    <h3>Coalition Builder (User Generated)</h3>
+<div class="header-container">
+  <h3>Coalition Builder (User Generated)</h3>
+
+  <div class="tab-switcher">
+    <div class="tab-pill" id="tab-pill"></div>
+    <button class="tab-btn active" id="tab-result">Result</button>
+    <button class="tab-btn" id="tab-2023">2023</button>
   </div>
+</div>
+
   <div class="legend" id="legend"></div>
   <div class="bar-container" id="bar">
     <div class="coalition-overlay" id="coalition-overlay"></div>
@@ -481,6 +569,41 @@ function renderCoalition(t){
     el.classList.toggle("active",selected.includes(n));
   });
 }
+/* ---- Tab Switching (fixed state handling) ---- */
+const tabResult = document.getElementById("tab-result");
+const tab2023 = document.getElementById("tab-2023");
+let is2023View = false;
+let lastUserTotals = null; // store the most recent calculated result
+
+// --- patch: remember user totals whenever calculator runs ---
+const originalUpdateCoalitionFromTotals = updateCoalitionFromTotals;
+updateCoalitionFromTotals = function(t) {
+  if (!is2023View) lastUserTotals = t; // only store when user-generated
+  originalUpdateCoalitionFromTotals(t);
+};
+
+tabResult.addEventListener("click", () => {
+  if (!tabResult.classList.contains("active")) {
+    tabResult.classList.add("active");
+    tab2023.classList.remove("active");
+    is2023View = false;
+    document.getElementById("tab-pill").style.transform = "translateX(0%)";
+    updateCoalitionFromTotals(lastUserTotals || lastTotalsCache);
+  }
+});
+
+tab2023.addEventListener("click", () => {
+  if (!tab2023.classList.contains("active")) {
+    tab2023.classList.add("active");
+    tabResult.classList.remove("active");
+    is2023View = true;
+    document.getElementById("tab-pill").style.transform = "translateX(100%)";
+    originalUpdateCoalitionFromTotals(PREV_2023);
+  }
+});
+
+
+
 </script>
 </body>
 </html>
