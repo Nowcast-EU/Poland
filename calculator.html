@@ -153,6 +153,25 @@
     table, th, td { font-size: 12px; }
     .input-wrapper input { width: 40px; }
   }
+/* --- Uniform table header height + centered header text --- */
+th {
+  height: 36px;           /* 👈 match td height for visual consistency */
+  font-weight: 650;
+  text-align: center;     /* 👈 header text centered only */
+  vertical-align: middle; /* 👈 keep it perfectly aligned vertically */
+}
+
+td {
+  height: 36px;           /* 👈 match th height */
+  vertical-align: middle; /* 👈 ensures text sits evenly across rows */
+}
+/* --- Make the Totals row shorter --- */
+tfoot td {
+  height: 24px;             /* roughly 2/3 of 36px */
+  vertical-align: middle;
+}
+
+
 /* --- Responsive rectangular tab switcher --- */
 /* --- Final rectangular tab switcher --- */
 .tab-switcher {
