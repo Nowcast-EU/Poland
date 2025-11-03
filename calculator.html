@@ -48,8 +48,21 @@
     margin: 28px 0 12px 0;
   }
 
-  table { width: 100%; border-collapse: collapse; margin-top: 12px; table-layout: fixed; }
-  th, td { padding: 4px 6px; border: 1px solid #e2e8f0; width: 20%; text-align: left; word-wrap: break-word; }
+  table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    margin-top: 12px; 
+    table-layout: fixed; 
+  }
+
+  th, td { 
+    padding: 4px 6px; 
+    border: 1px solid #e2e8f0; 
+    width: 20%; 
+    text-align: left; 
+    word-wrap: break-word; 
+  }
+
   th { background: #f1f5f9; font-weight: 600; }
   td.party-column { font-weight: bold; position: relative; padding-left: 14px; color: black; }
   td.party-column::before { content: ""; position: absolute; left: 0; top: 0; width: 8px; height: 100%; border-radius: 2px 0 0 2px; background-color: var(--party-color); }
@@ -66,16 +79,30 @@
   }
   .percent-sign { font-size: 14px; }
 
-  .button-container { display: flex; gap: 8px; margin-top: 14px; }
-  button#calculate, button#reset {
-    background: #008500; color: #fff; border: none; border-radius: 6px;
-    padding: 8px 14px; cursor: pointer; transition: background 0.3s ease;
+  /* --- FIXED BUTTONS --- */
+  .button-container { 
+    display: flex; 
+    gap: 8px; 
+    margin-top: 14px; 
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
-  button#calculate { flex: 0 0 80%; }
-  button#reset { flex: 0 0 20%; }
+
+  button#calculate, button#reset {
+    background: #008500; 
+    color: #fff; 
+    border: none; 
+    border-radius: 6px;
+    padding: 8px 14px; 
+    cursor: pointer; 
+    transition: background 0.3s ease;
+    flex: 1; /* ensure even resizing without overflow */
+  }
 
   tfoot td { font-weight: bold; text-align: center; background: #f1f5f9; }
   tfoot td:first-child { text-align: left; padding-left: 14px; }
+
   input[type=number]::-webkit-inner-spin-button,
   input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   input[type=number] { -moz-appearance: textfield; }
@@ -111,6 +138,7 @@
     .legend-item { font-size: 12px; padding: 5px 8px; }
     .input-wrapper input { width: 45px; }
   }
+
   @media (max-width: 480px) {
     table, th, td { font-size: 12px; }
     .input-wrapper input { width: 40px; }
