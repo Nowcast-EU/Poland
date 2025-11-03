@@ -466,6 +466,70 @@ let lastTotalsCache=null;
 function updateCoalitionFromTotals(t){lastTotalsCache=t;renderCoalition(t);}
 
 /* ▼ Coalition Builder Tabs Script START ▼ */
+  /* ▼ Coalition Builder Core Functions RESTORED ▼ */
+const COAL_TOTAL = 460, COAL_MAJ = 231;
+let selected = [];
+const legend = document.getElementById("legend"),
+      overlay = document.getElementById("coalition-overlay"),
+      counter = document.getElementById("counter");
+
+function toggleParty(n) {
+  if (selected.includes(n)) selected = selected.filter(x => x !== n);
+  else selected.push(n);
+  renderCoalition(lastTotalsCache);
+}
+
+let lastTotalsCache = null;
+function updateCoalitionFromTotals(t) {
+  lastTotalsCache = t;
+  if (currentTab === "result") renderCoalition(t);
+}
+
+/* --- draw coalition overlay + legend --- */
+function renderCoalition(t) {
+  if (!t) return;
+  overlay.innerHTML = "";
+  legend.innerHTML = "";
+
+  PARTIES.forEach(n => {
+    const s = t[n] || 0;
+    const item = document.createElement("div");
+    item.className = "legend-item" + (selected.includes(n) ? " active" : "");
+    item.innerHTML = `
+      <div class="legend-box" style="background:${PARTY_COLORS[n] || "#999"}"></div>
+      <strong>${n}</strong> ${s}
+    `;
+    item.onclick = () => toggleParty(n);
+    legend.appendChild(item);
+  });
+
+  const totalSel = selected.reduce((s, n) => s + (t[n] || 0), 0);
+  const width = (totalSel / COAL_TOTAL) * 100;
+  overlay.style.width = "0%";
+  overlay.innerHTML = "";
+
+  if (totalSel > 0) {
+    selected.forEach(n => {
+      const s = t[n] || 0;
+      const seg = document.createElement("div");
+      seg.className = "segment";
+      seg.style.flexBasis = ((s / totalSel) * 100) + "%";
+      seg.style.background = PARTY_COLORS[n] || "#999";
+      overlay.appendChild(seg);
+    });
+  }
+
+  requestAnimationFrame(() => (overlay.style.width = width + "%"));
+  counter.textContent = `${totalSel} / ${COAL_TOTAL}`;
+  counter.style.color = totalSel >= COAL_MAJ ? "#2BA84A" : "#000";
+
+  document.querySelectorAll(".legend-item").forEach(el => {
+    const n = el.querySelector("strong").textContent;
+    el.classList.toggle("active", selected.includes(n));
+  });
+}
+/* ▲ Coalition Builder Core Functions RESTORED ▲ */
+
 const tabsContainer = document.getElementById("coalitionTabs");
 const tabButtons = tabsContainer.querySelectorAll(".coalition-tab");
 let currentTab = "result";
