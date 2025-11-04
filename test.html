@@ -651,7 +651,7 @@ tab2023.addEventListener("click", () => {
 let geojsonData = null;
 
 // Load the GeoJSON once
-fetch("PolandMapJSON.geojson")
+fetch("https://nowcast-eu.github.io/Poland/PolandMapJSON.geojson")
   .then(r => r.json())
   .then(data => {
     geojsonData = data;
